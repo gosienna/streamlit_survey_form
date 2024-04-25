@@ -1,32 +1,45 @@
 import streamlit as st
 import pandas as pd
+from streamlit_gsheets import GSheetsConnection
 
-# Title for the Streamlit app
-st.title('Welcome to the Simple Streamlit App')
+st.title("Google Sheets as a DataBase")
 
-# Create a form for user input
-with st.form("user_info_form"):
-    # User input for name inside the form
-    name = st.text_input('Please enter your name:', '')
+# Function to create a sample Orders dataframe
+def create_dataframe():
+    return pd.DataFrame({
+        'Date': ["3/1", "3/2", "3/3", "3/4", "3/5"],
+        'Water intake': [2000, 1750, 1500, 1000, 2000],
+        'Bath': ['yes', 'no', 'yes', 'no', 'yes'],
+        'Urine':  [2200, 1000, 1500, 800, 2000],
+    })
 
-    # User input for age inside the form
-    age = st.number_input('Please enter your age:', min_value=0, max_value=150, step=1)
+# Create the Orders dataframe
+df = create_dataframe()
 
-    # Submit button for the form
-    submitted = st.form_submit_button("Submit")
+# Display the current DataFrame with an editor)
+placeholder = st.empty()
+placeholder.data_editor(df)
+if st.button("Update I/O"):
+    placeholder.empty()
+    updated_df = df.copy()
+    updated_df['I/O'] = updated_df['Water intake'] - updated_df['Urine']
+    placeholder.data_editor(updated_df)
 
-# Display the inputs if the form is submitted
-if submitted:
-    st.write(f'Hello, {name}! You are {age} years old.')
+st.divider() #---------------------------------------------------------
 
-df = pd.DataFrame(
-    [
-        {"command": "st.selectbox", "rating": 4, "is_widget": True},
-        {"command": "st.balloons", "rating": 5, "is_widget": False},
-        {"command": "st.time_input", "rating": 3, "is_widget": True},
-    ]
-)
+st.write("CRUD Operations:")
+# Establishing a Google Sheets connection
+conn = st.connection("gsheets", type=GSheetsConnection)
 
-edited_df = st.data_editor(df) # 👈 An editable dataframe
+# Taking actions based on user input
+if st.button("New Worksheet"):
+    conn.create(worksheet="Kewei", data=df)
+    st.success("Worksheet Created 🎉")
 
-favorite_command = edited_df.loc[edited_df["rating"].idxmax()]["command"]
+if st.button("Update Worksheet"):
+    conn.update(worksheet="Kewei", data=updated_df)
+    st.success("Worksheet Updated 🤓")
+
+if st.button("Clear Worksheet"):
+    conn.clear(worksheet="Kewei")
+    st.success("Worksheet Cleared 🧹")
